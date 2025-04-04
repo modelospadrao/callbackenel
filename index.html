@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo de Callback</title>
+  <!-- Importa a biblioteca html2pdf para salvar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <style>
+    /* ===== RESET E ESTILOS BASE ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Cambria, Cochin, Georgia, Times, sans-serif;
+      padding: 33px;
+      background-color: #f4f4f4;
+      overscroll-behavior-y: none;
+    }
+    h2, h3 {
+      font-weight: bold;
+      color: #e63946;
+    }
+    .enel-logo {
+      display: block;
+      margin: 20px auto;
+      width: 215px;
+      height: auto;
+    }
+    /* Inputs, Textarea e Labels */
+    input[type="text"],
+    textarea {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      width: 100%;
+      margin-bottom: 10px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+      font-size: 16px;
+    }
+    label {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+      display: block;
+    }
+    /* Botões de pergunta com ícone à esquerda */
+    .question-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .question-icon {
+      font-size: 24px;
+      margin-right: 8px;
+      width: 30px;
+      text-align: center;
+    }
+    .question-button {
+      background-color: white;
+      color: #e63946;
+      border: 1px solid #000;
+      padding: 10px 15px;
+      border-radius: 5px;
+      width: 100%;
+      font-size: 16px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+    }
+    .question-button:hover {
+      background-color: #f1f1f1;
+    }
+    .question-button.selected {
+      background-color: #333;
+      color: white;
+      font-weight: bold;
+    }
+    /* Caixa de pré-visualização */
+    .preview-container-wrapper {
+      margin: 3px 2px 30px;
+    }
+    .preview-container {
+      background: rgba(48, 48, 48, 0.85);
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 27px;
+      box-shadow: 3px 6px 8px rgba(0,0,0,0.1);
+      font-family: 'Courier New', Courier, monospace;
+      color: white;
+      font-size: 16px;
+      width: 100%;
+      max-width: 700px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-x: hidden;
+      margin: 1 auto 20px;
+    }
+    .message-preview {
+      white-space: pre-line;
+    }
+    /* ===== ESTILOS DOS BOTÕES (BASE DO PRIMEIRO CÓDIGO) ===== */
+    .button-default {
+      border: 1px solid black;
+      padding: 8px 16px;
+      margin: 5px;
+      background-color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .button-default.selected {
+      background-color: #000;
+      color: #fff;
+      border: 1px solid #000;
+    }
+    .button-default:hover {
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .button-gerarMensagem {
+      background-color: #616964;
+      color: white;
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .button-enviarWhatsApp {
+      background-color: #00b145;
+      color: white;
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .clear-button {
+      background-color: #f44336;
+      color: white;
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    /* Botão principal: Iniciar Conversa */
+    .button-principal {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      flex: 1;
+    }
+    .button-principal:hover {
+      background-color: #45a049;
+    }
+    /* Botão Reset */
+    #reset-button {
+      border: 1px solid black;
+      padding: 8px 16px;
+      background-color: #000;
+      color: white;
+      cursor: pointer;
+      font-size: 20px;
+      border-radius: 32px;
+      margin: 10px;
+      display: block;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      z-index: 3000;
+    }
+    /* ===== ELEMENTOS ADICIONAIS (Contador e Popups) ===== */
+    #global-clock {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      font-family: 'Courier New', Courier, monospace;
+      color: #fff;
+      background-color: #000;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1001;
+    }
+    /* Overlay para interceptar cliques quando os campos estiverem bloqueados */
+    #clickOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      z-index: 2500;
+      display: none;
+    }
+    /* Pop-ups genéricos */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: rgba(0,0,0,0.8);
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      z-index: 1100;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+    .popup button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #fff;
+      color: #000;
+      z-index: 1101;
+    }
+    /* Pop-up para TalkBack */
+    #talkback-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: rgba(0,0,0,0.85);
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      z-index: 1100;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    #talkback-popup .popup-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-around;
+    }
+    #talkback-popup .popup-buttons button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #fff;
+      color: #000;
+    }
+    /* Pop-up de Confirmação para iniciar conversa */
+    #confirm-conversation-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: rgba(0,0,0,0.85);
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      z-index: 1150;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    #confirm-conversation-popup .popup-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-around;
+    }
+    #confirm-conversation-popup .popup-buttons button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #fff;
+      color: #000;
+    }
+    /* Pop-up para campos bloqueados */
+    #blockedPopup {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      z-index: 2500;
+      font-size: 18px;
+      text-align: center;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Global Clock -->
+  <div id="global-clock"></div>
+  
+  <!-- Overlay para interceptar cliques quando os campos estiverem bloqueados -->
+  <div id="clickOverlay"></div>
+
+  <!-- Pop-ups -->
+  <div id="update-popup" class="popup">
+    <p>⚠️ NOTAS DE ATUALIZAÇÃO:<br><br>
+       1️⃣ Pré-visualização atualizada em tempo real.<br>
+       2️⃣ Botões para copiar, encaminhar, limpar e salvar PDF com pop-ups de confirmação.<br>
+       3️⃣ Validação dos campos obrigatórios (Nome, Endereço e Telefone – 11 dígitos).<br>
+       4️⃣ Aviso se nenhuma mensagem pré-definida for selecionada.<br>
+       5️⃣ Pop-up de confirmação ao iniciar a conversa.<br>
+       6️⃣ Fluxo inicial bloqueia os campos até confirmar o Início do Callback.<br>
+       7️⃣ Botão de reset para reiniciar a sessão.<br>
+    </p>
+    <button id="closeUpdate">Fechar</button>
+  </div>
+
+  <div id="talkback-popup" class="popup">
+    <p>Deseja iniciar o Callback?</p>
+    <div class="popup-buttons">
+      <button onclick="startTalkBack()">Sim</button>
+      <button onclick="handleNoTalkBack()">Não</button>
+    </div>
+  </div>
+
+  <div id="confirm-conversation-popup" class="popup">
+    <p>Deseja realmente iniciar essa conversa com o cliente?</p>
+    <div class="popup-buttons">
+      <button onclick="confirmConversationYes()">Sim</button>
+      <button onclick="confirmConversationNo()">Cancelar/Revisar dados!</button>
+    </div>
+  </div>
+
+  <div id="popup" class="popup"></div>
+  <div id="blockedPopup">⚠️ ATENÇÃO: Todos os campos estão bloqueados!<br>Reinicie a página utilizando o botão "RESETAR SESSÃO".</div>
+
+  <h2 style="text-align: center; font-size: 30px; font-weight: bold; color: #e63946;">
+    MODELO DE APLICAÇÃO CALLBACK<br>ENEL/CE
+  </h2>
+  <h2 style="text-align: center; font-size: 21px; font-weight: bold; color: #000;"><br>(Versão 2.0)</h2>
+  <h3>Pré-visualização:</h3>
+  <div class="preview-container-wrapper">
+    <div class="preview-container">
+      <pre id="messagePreview" class="message-preview">
+Por favor, preencha todos os campos obrigatórios para elaborar a conversa!
+      </pre>
+    </div>
+  </div>
+
+  <!-- Container de Formulário -->
+  <div id="form-container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="width: 70%;">
+        <label for="name">NOME DO CLIENTE:</label>
+        <!-- O input NÃO forçará a escrita em maiúsculas, pois o nome será convertido para Title Case na pré-visualização -->
+        <input type="text" id="name" placeholder="Nome Completo" oninput="updatePreview()" maxlength="100"><br><br>
+
+        <label for="address">ENDEREÇO DO CLIENTE:</label>
+        <!-- Força que o usuário digite em maiúsculo -->
+        <input type="text" id="address" placeholder="Endereço completo" oninput="this.value = this.value.toUpperCase(); updatePreview()" maxlength="200"><br><br>
+
+        <label for="phone">TELEFONE COM DDD (APENAS NÚMEROS):</label>
+        <input type="text" id="phone" placeholder="Ex: 85999999999" oninput="validatePhone(this); updatePreview()" maxlength="11" pattern="\d{11}" title="Somente números com 11 dígitos" inputmode="numeric"><br><br>
+
+        <h3>Selecione as perguntas para o cliente:</h3><br>
+        <div class="question-option">
+          <span class="question-icon">💡</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">A energia já normalizou?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">💡</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">Ainda está com oscilação de energia na residência?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🏠</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">O problema atinge toda a residência ou apenas parte dela?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🏠</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">Os vizinhos também estão sem energia?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🌳</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">O problema é relacionado a vegetação sobre a rede elétrica?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🚨</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">O problema é falta de energia na iluminação pública?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🛻</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">Tem alguma equipe no local?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">💡</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">Se o problema é relacionado com Tensão Alta ou Baixa?</button>
+        </div>
+        <div class="question-option">
+          <span class="question-icon">🔌</span>
+          <button type="button" class="question-button" onclick="toggleSelection(this)">Se o problema é relacionado com corte ou religação?</button>
+        </div>
+        <br><br>
+
+        <label for="customMessage">Mensagem personalizada (opcional):</label><br>
+        <textarea id="customMessage" placeholder="Digite algo extra se necessário" oninput="updatePreview()"></textarea><br><br>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <button id="mainButton" class="button-principal" onclick="confirmStartConversation()">Iniciar Conversa</button>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="button-default" onclick="copyPreview()">Copiar Mensagem</button>
+            <button class="button-enviarWhatsApp" onclick="sendMessage()">Encaminhar para WhatsApp</button>
+            <button class="clear-button" onclick="clearPreview()">Limpar Dados e Mensagem</button>
+            <button id="pdfButton" class="button-default" onclick="savePdf()">Salvar PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Enel_Group_logo.svg" alt="Logo ENEL" class="enel-logo">
+  <p style="text-align: center; font-style: italic; font-family: 'Courier New', Courier, monospace; margin-top: 40px;">
+    © 2025 Emanuel Aguiar (Assistente Administrativo Insourcing - Enel CE)<br>
+    Todos os direitos reservados.
+  </p>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <button id="reset-button" onclick="resetSession()">RESETAR SESSÃO</button>
+  </div>
+
+  <script>
+    // Função para converter uma string para Title Case (primeira letra de cada palavra maiúscula)
+    function toTitleCase(str) {
+      return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    // Variáveis globais
+    let pdfSaved = false;
+    let globalTimerStart = null;
+    let globalTimerInterval = null;
+    let lastInteraction = Date.now();
+    let fieldsBlocked = false; // True quando o usuário clicar "Não" no TalkBack
+
+    // Função para validar o telefone (somente números)
+    function validatePhone(input) {
+      input.value = input.value.replace(/\D/g, '');
+    }
+
+    // Alterna a seleção dos botões de pergunta e atualiza a pré-visualização
+    function toggleSelection(button) {
+      button.classList.toggle('selected');
+      updatePreview();
+    }
+
+    // Função para formatar o tempo
+    function formatTime(totalSeconds) {
+      let minutes = Math.floor(totalSeconds / 60);
+      let seconds = totalSeconds % 60;
+      let result = "";
+      if (minutes > 0) {
+        result += minutes + (minutes === 1 ? " minuto" : " minutos");
+        if (seconds > 0) result += " e " + seconds + (seconds === 1 ? " segundo" : " segundos");
+      } else {
+        result += seconds + (seconds === 1 ? " segundo" : " segundos");
+      }
+      return result;
+    }
+
+    // Função para formatar a data completa por extenso
+    function formatFullDateTime(date) {
+      const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+                     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+      let dia = date.getDate();
+      let mes = meses[date.getMonth()];
+      let ano = date.getFullYear();
+      let horas = date.getHours();
+      let minutos = date.getMinutes();
+      let segundos = date.getSeconds();
+      mes = mes.charAt(0).toUpperCase() + mes.slice(1);
+      let strHoras = `${horas} ${horas === 1 ? "hora" : "horas"}`;
+      let strMinutos = `${minutos} ${minutos === 1 ? "minuto" : "minutos"}`;
+      let strSegundos = `${segundos} ${segundos === 1 ? "segundo" : "segundos"}`;
+      return `${dia} de ${mes} de ${ano} às ${strHoras} e ${strMinutos} e ${strSegundos}`;
+    }
+
+    // Atualiza a pré-visualização; o nome é convertido para Title Case e o endereço para maiúsculo
+    function updatePreview() {
+      let name = document.getElementById("name").value.trim();
+      let address = document.getElementById("address").value.trim();
+      let phone = document.getElementById("phone").value.trim();
+      let customMessage = document.getElementById("customMessage").value.trim();
+      let selectedMessages = Array.from(document.querySelectorAll('.question-button.selected')).map(btn => btn.textContent.trim());
+      
+      if (phone && phone.length < 11) {
+        document.getElementById("messagePreview").textContent = "📞 O número de telefone deve conter 11 dígitos.";
+        document.getElementById("popup").textContent = "📞 O número de telefone deve conter 11 dígitos.";
+        showPopup("popup", 3000);
+        return;
+      }
+      
+      let errors = [];
+      if (!name) errors.push("👨‍💼 Digite o NOME do cliente.");
+      if (!address) errors.push("🏠 Digite o ENDEREÇO do cliente.");
+      if (!phone) errors.push("📞 Digite o TELEFONE com DDD.");
+      if (errors.length > 0) {
+        document.getElementById("messagePreview").textContent = errors.join("\n");
+        return;
+      }
+      
+      // Converte o nome para Title Case e o endereço para maiúsculo
+      name = toTitleCase(name);
+      address = address.toUpperCase();
+      
+      let message = `Prezado(a) ${name},\n\n`;
+      message += `Somos do Callback da ENEL, estamos entrando em contato a respeito da reclamação feita no endereço ${address}, o senhor(a) poderia me confirmar se:\n\n`;
+      if (selectedMessages.length > 0) {
+        message += selectedMessages.join('\n') + "\n";
+      }
+      if (customMessage) {
+        message += `\n${customMessage}`;
+      }
+      message += "\n\nAguardamos seu retorno para resolver\no problema o mais rápido possível!\n\n";
+      
+      // Acrescenta o tempo da sessão e a data completa, se o temporizador estiver ativo
+      if (globalTimerStart) {
+        let sessionSeconds = Math.floor((Date.now() - globalTimerStart) / 1000);
+        let sessionTime = "*TEMPO DA SESSÃO:* " + formatTime(sessionSeconds) + "\n";
+        let now = new Date();
+        let fullDate = formatFullDateTime(now);
+        message += "\n" + sessionTime + fullDate;
+      }
+      
+      document.getElementById("messagePreview").textContent = message;
+      lastInteraction = Date.now();
+    }
+
+    // Copia a mensagem da pré-visualização
+    function copyPreview() {
+      const message = document.getElementById("messagePreview").textContent;
+      navigator.clipboard.writeText(message).then(() => {
+        document.getElementById("popup").textContent = "Mensagem Copiada!";
+        showPopup("popup", 2000);
+      });
+    }
+
+    // Abre o WhatsApp com a mensagem
+    function sendMessage() {
+      const message = document.getElementById("messagePreview").textContent;
+      const whatsappUrl = `https://wa.me/55${document.getElementById("phone").value.trim()}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+    }
+
+    // Limpa os campos e a pré-visualização
+    function clearPreview() {
+      document.getElementById("name").value = '';
+      document.getElementById("address").value = '';
+      document.getElementById("phone").value = '';
+      document.getElementById("customMessage").value = '';
+      document.querySelectorAll('.question-button').forEach(btn => btn.classList.remove('selected'));
+      updatePreview();
+      document.getElementById("popup").textContent = "Mensagem limpas com sucesso!";
+      showPopup("popup", 2000);
+    }
+
+    // Salva a página em PDF com o contador visível (corrigindo o corte do contador)
+    function savePdf() {
+      updatePreview();
+      const container = document.querySelector('body');
+      const width = container.offsetWidth;
+      const height = container.offsetHeight;
+      // Altera temporariamente a posição do contador para "absolute"
+      const clock = document.getElementById("global-clock");
+      const originalPosition = clock.style.position;
+      clock.style.position = "absolute";
+      
+      let name = document.getElementById("name").value.trim().replace(/\s+/g, "_");
+      let data = new Date().toLocaleDateString("pt-BR").replace(/\//g, "_");
+      let fileName = `CALLBACK_${name}_${data}.pdf`;
+      
+      html2pdf().set({
+        margin: 10,
+        filename: fileName.toUpperCase(),
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, scrollY: -window.scrollY },
+        jsPDF: { unit: 'px', format: [width, height], orientation: 'portrait' }
+      }).from(container).save().then(() => {
+        // Restaura a posição original do contador
+        clock.style.position = originalPosition;
+        document.getElementById("popup").textContent = "PDF salvo com sucesso!";
+        showPopup("popup", 2000);
+        const pdfButton = document.getElementById('pdfButton');
+        pdfButton.textContent = 'PDF JÁ SALVO';
+        pdfButton.style.backgroundColor = '#4CAF50';
+        pdfButton.style.color = '#fff';
+        pdfButton.disabled = true;
+        pdfSaved = true;
+      });
+    }
+
+    // Exibe um pop-up por um determinado tempo
+    function showPopup(id, duration) {
+      const popup = document.getElementById(id);
+      popup.style.display = 'block';
+      setTimeout(() => { popup.style.display = 'none'; }, duration);
+    }
+
+    // Fecha o pop-up de atualização e exibe o de TalkBack
+    function closeUpdatePopup() {
+      document.getElementById('update-popup').style.display = 'none';
+      showTalkbackPopup();
+    }
+
+    // Exibe o pop-up de TalkBack
+    function showTalkbackPopup() {
+      document.getElementById('talkback-popup').style.display = 'block';
+    }
+
+    // Se o usuário clicar "Sim" no TalkBack, habilita os campos e inicia o contador
+    function startTalkBack() {
+      document.getElementById('talkback-popup').style.display = 'none';
+      enableFields();
+      startGlobalTimer();
+      // Esconde o overlay se estiver visível
+      document.getElementById("clickOverlay").style.display = "none";
+    }
+
+    // Se o usuário clicar "Não" no TalkBack, mantém os campos bloqueados e exibe o overlay
+    function handleNoTalkBack() {
+      document.getElementById('talkback-popup').style.display = 'none';
+      disableFields();
+      fieldsBlocked = true;
+      document.getElementById("clickOverlay").style.display = "block";
+    }
+
+    // Desabilita os campos do formulário
+    function disableFields() {
+      const elements = document.getElementById("form-container").querySelectorAll("input, select, textarea, button");
+      elements.forEach(el => el.disabled = true);
+    }
+
+    // Habilita os campos do formulário
+    function enableFields() {
+      const elements = document.getElementById("form-container").querySelectorAll("input, select, textarea, button");
+      elements.forEach(el => el.disabled = false);
+    }
+
+    // Exibe o pop-up de confirmação para iniciar a conversa
+    function confirmStartConversation() {
+      let name = document.getElementById("name").value.trim();
+      let address = document.getElementById("address").value.trim();
+      let phone = document.getElementById("phone").value.trim();
+      let errors = [];
+      if (!name) errors.push("👨‍💼 Digite o NOME do cliente.");
+      if (!address) errors.push("🏠 Digite o ENDEREÇO do cliente.");
+      if (!phone) errors.push("📞 Digite o TELEFONE com DDD.");
+      if (phone && phone.length < 11) errors.push("📞 O número de telefone deve conter 11 dígitos.");
+      if (errors.length > 0) {
+        document.getElementById("popup").innerHTML = errors.join("<br>");
+        showPopup("popup", 5000);
+        return;
+      }
+      
+      let selectedMessages = document.querySelectorAll('.question-button.selected');
+      if (selectedMessages.length === 0) {
+        document.getElementById("popup").textContent = "Por favor, marque alguma mensagem pré-definida!";
+        showPopup("popup", 5000);
+        return;
+      }
+      
+      document.getElementById("confirm-conversation-popup").style.display = "block";
+    }
+
+    // Se o usuário confirmar iniciar a conversa
+    function confirmConversationYes() {
+      document.getElementById("confirm-conversation-popup").style.display = "none";
+      sendMessage();
+    }
+
+    // Se o usuário cancelar a ação
+    function confirmConversationNo() {
+      document.getElementById("confirm-conversation-popup").style.display = "none";
+    }
+
+    // Atualização automática do preview
+    function scheduleAutoPreviewUpdate() {
+      let diff = Date.now() - lastInteraction;
+      let interval = diff < 2 * 60 * 1000 ? 2 * 60 * 1000 : 3 * 60 * 1000;
+      setTimeout(() => {
+        updatePreview();
+        scheduleAutoPreviewUpdate();
+      }, interval);
+    }
+
+    // Inicia o contador de sessão
+    function startGlobalTimer() {
+      globalTimerStart = Date.now();
+      globalTimerInterval = setInterval(() => {
+        let totalSeconds = Math.floor((Date.now() - globalTimerStart) / 1000);
+        document.getElementById("global-clock").textContent = formatTime(totalSeconds);
+      }, 1000);
+    }
+
+    // Reinicia a sessão recarregando a página
+    function resetSession() {
+      window.location.reload();
+    }
+
+    // Overlay: se os campos estiverem bloqueados, qualquer clique na área coberta dispara o pop-up de aviso
+    document.getElementById("clickOverlay").addEventListener("click", function(e) {
+      showPopup("blockedPopup", 3000);
+      e.stopPropagation();
+    });
+
+    // Inicializa: desabilita os campos e exibe o pop-up de atualização
+    document.addEventListener("DOMContentLoaded", () => {
+      disableFields();
+      scheduleAutoPreviewUpdate();
+      document.getElementById('update-popup').style.display = 'block';
+      document.getElementById('closeUpdate').addEventListener('click', closeUpdatePopup);
+    });
+  </script>
+</body>
+</html>
