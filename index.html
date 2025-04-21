@@ -323,21 +323,18 @@
   <!-- Overlay para interceptar cliques quando os campos estiverem bloqueados -->
   <div id="clickOverlay"></div>
 
-<!-- Pop-ups -->
-  <div id="update-popup" class="popup" style="font-size: 15px;">
-  <p>⚠️ NOTAS DE ATUALIZAÇÃO:<br><br>
-     1️⃣ Pré-visualização atualizada em tempo real.<br>
-     2️⃣ Botões para copiar, encaminhar, limpar e salvar PDF com pop-ups de confirmação.<br>
-     3️⃣ Validação dos campos obrigatórios (Nome, Endereço e Telefone – 11 dígitos).<br>
-     4️⃣ Aviso se nenhuma mensagem pré-definida for selecionada.<br>
-     5️⃣ Pop-up de confirmação ao iniciar a conversa.<br>
-     6️⃣ Fluxo inicial bloqueia os campos até confirmar o Início do Callback.<br>
-     7️⃣ Botão de reset para reiniciar a sessão.<br>
-    <br>
-  </p>
-  <button id="closeUpdate" onclick="closeUpdatePopup()" style="font-size: 15px; padding: 7px 125px; border-radius: 14px; background-color: #ffffff; color: black; border: none; cursor: pointer; display: block; margin: 0 auto;">
-    Fechar
-  </button>
+  <!-- Pop-ups -->
+  <div id="update-popup" class="popup">
+    <p>⚠️ NOTAS DE ATUALIZAÇÃO:<br><br>
+       1️⃣ Pré-visualização atualizada em tempo real.<br>
+       2️⃣ Botões para copiar, encaminhar, limpar e salvar PDF com pop-ups de confirmação.<br>
+       3️⃣ Validação dos campos obrigatórios (Nome, Endereço e Telefone – 11 dígitos).<br>
+       4️⃣ Aviso se nenhuma mensagem pré-definida for selecionada.<br>
+       5️⃣ Pop-up de confirmação ao iniciar a conversa.<br>
+       6️⃣ Fluxo inicial bloqueia os campos até confirmar o Início do Callback.<br>
+       7️⃣ Botão de reset para reiniciar a sessão.<br>
+    </p>
+    <button id="closeUpdate">Fechar</button>
   </div>
 
   <div id="talkback-popup" class="popup">
@@ -362,7 +359,7 @@
   <h2 style="text-align: center; font-size: 30px; font-weight: bold; color: #e63946;">
     MODELO DE APLICAÇÃO CALLBACK<br>ENEL/CE
   </h2>
-  <h2 style="text-align: center; font-size: 21px; font-weight: bold; color: #000;"><br>(Versão 2.0)</h2>
+  <h2 style="text-align: center; font-size: 21px; font-weight: bold; color: #000;"><br>(Versão 3.0)</h2>
   <h3>Pré-visualização:</h3>
   <div class="preview-container-wrapper">
     <div class="preview-container">
@@ -432,8 +429,7 @@ Por favor, preencha todos os campos obrigatórios para elaborar a conversa!
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
           <button id="mainButton" class="button-principal" onclick="confirmStartConversation()">Iniciar Conversa</button>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button class="button-default" onclick="copyPreview()">Copiar Mensagem</button>
-            <button class="button-enviarWhatsApp" onclick="sendMessage()">Encaminhar para WhatsApp</button>
+            
             <button class="clear-button" onclick="clearPreview()">Limpar Dados e Mensagem</button>
             <button id="pdfButton" class="button-default" onclick="savePdf()">Salvar PDF</button>
           </div>
